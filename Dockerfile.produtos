@@ -1,0 +1,20 @@
+# Usa uma imagem leve do Node.js
+FROM node:18-alpine
+
+# Define a pasta de trabalho dentro do contentor
+WORKDIR /app
+
+# Copia os ficheiros de dependências
+COPY package*.json ./
+
+# Instala as dependências
+RUN npm install
+
+# Copia o resto do código para dentro do contentor
+COPY . .
+
+# Expõe a porta 3000
+EXPOSE 3000
+
+# Comando para iniciar a aplicação
+CMD ["node", "produtos.js"]

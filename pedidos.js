@@ -5,7 +5,11 @@ const app = express();
 const PORT = 3001;
 
 // URL do Serviço de Produtos (onde ele está a rodar)
-const PRODUCT_SERVICE_URL = 'http://localhost:3000/produtos';
+// ANTES:
+// const PRODUCT_SERVICE_URL = 'http://localhost:3000/produtos';
+
+// DEPOIS (Usando variável de ambiente ou nome do contentor):
+const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://produtos-app:3000/produtos';
 
 app.get('/criar-pedido', async (req, res) => {
     try {
