@@ -7,34 +7,45 @@ const PORT = 3001;
 const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://produtos-app:3000/produtos';
 
 app.get('/criar-pedido', async (req, res) => {
+    let produtoSelecionado;
+    let observacao = '';
+
     try {
-        console.log('A contactar o serviço de produtos...');
-        const resposta = await axios.get(PRODUCT_SERVICE_URL);
+        console.log('A tentar contactar o serviço de produtos...');
+        // Definimos um timeout curto (1 segundo). Se demorar mais, desistimos.
+        const resposta = await axios.get(PRODUCT_SERVICE_URL, { timeout: 1000 });
         
-        // --- CORREÇÃO AQUI ---
-        // O serviço de produtos agora devolve { quem_respondeu: '...', dados: [...] }
-        const infoDoServico = resposta.data; 
-        const produtos = infoDoServico.dados; // Extraímos a lista da propriedade 'dados'
-        const podQueAtendeu = infoDoServico.quem_respondeu; // Extraímos o nome do pod
-        // ---------------------
-
-        const novoPedido = {
-            idPedido: 999,
-            cliente: 'João Silva',
-            produtoComprado: produtos[0], 
-            atendidoPor: podQueAtendeu, // Adicionamos esta informação ao pedido final
-            data: new Date()
-        };
-
-        res.json({
-            mensagem: 'Pedido criado com sucesso!',
-            pedido: novoPedido
-        });
+        const infoDoServico = resposta.data;
+        produtoSelecionado = infoDoServico.dados[0];
+        observacao = `Atendido por: ${infoDoServico.quem_respondeu}`;
 
     } catch (erro) {
-        console.error('Erro:', erro.message);
-        res.status(500).json({ erro: 'Erro ao comunicar com o serviço de produtos.' });
+        console.warn('O Serviço de Produtos está indisponível! Usando Fallback.');
+        
+        // --- AQUI ENTRA O FALLBACK ---
+        // Em vez de crashar, usamos um produto "default"
+        produtoSelecionado = {
+            id: 0,
+            nome: "Produto Genérico (Sistema em Manutenção)",
+            preco: 0
+        };
+        observacao = "Modo de Segurança ativado. Detalhes indisponíveis no momento.";
+        // -----------------------------
     }
+
+    // O código continua normalmente, mesmo com o erro lá em cima
+    const novoPedido = {
+        idPedido: 999,
+        cliente: 'João Silva',
+        produtoComprado: produtoSelecionado,
+        status: observacao,
+        data: new Date()
+    };
+
+    res.json({
+        mensagem: 'Pedido processado.',
+        pedido: novoPedido
+    });
 });
 
 app.listen(PORT, () => {
