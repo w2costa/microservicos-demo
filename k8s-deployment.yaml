@@ -1,0 +1,90 @@
+# --------------------------------------
+# 1. Serviço de Produtos (Deployment)
+# --------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: produtos-deployment
+spec:
+  replicas: 1 # Quantas cópias queres a rodar
+  selector:
+    matchLabels:
+      app: produtos
+  template:
+    metadata:
+      labels:
+        app: produtos
+    spec:
+      containers:
+      - name: produtos-container
+        image: img-produtos:latest # A imagem que criaste antes
+        imagePullPolicy: Never # Importante para usar a imagem local sem tentar baixar da internet
+        ports:
+        - containerPort: 3000
+
+---
+
+# --------------------------------------
+# 2. Serviço de Produtos (Service - Rede Interna)
+# --------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: produtos-service # Este nome funcionará como um domínio na rede interna
+spec:
+  type: ClusterIP # Só acessível dentro do cluster (mais seguro)
+  # type: LoadBalancer # Permite acesso de fora (ex: localhost)
+  selector:
+    app: produtos
+  ports:
+    - protocol: TCP
+      port: 3000 # Porta exposta pelo Service
+      targetPort: 3000 # Porta que o container está escutanado
+
+---
+
+# --------------------------------------
+# 3. Serviço de Pedidos (Deployment)
+# --------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pedidos-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedidos
+  template:
+    metadata:
+      labels:
+        app: pedidos
+    spec:
+      containers:
+      - name: pedidos-container
+        image: img-pedidos:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3001
+        env:
+        # Aqui injetamos a URL correta para o K8s
+        - name: PRODUCT_SERVICE_URL
+          value: "http://produtos-service:3000/produtos"
+
+---
+
+# --------------------------------------
+# 4. Serviço de Pedidos (Service - Acesso Externo)
+# --------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedidos-service
+spec:
+  type: LoadBalancer # Permite acesso de fora (ex: localhost)
+  selector:
+    app: pedidos
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
